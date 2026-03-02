@@ -30,8 +30,20 @@ async def local_embed(texts: list[str]) -> np.ndarray:
 
 
 async def dummy_llm(prompt: str, **kwargs: object) -> str:
-    """Dummy LLM — naive mode does not use entity extraction."""
-    return ""
+    """Return retrieved context directly — no real LLM synthesis.
+
+    LightRAG passes retrieved chunks via ``system_prompt``.  We surface
+    the context portion so naive-mode queries return meaningful results
+    without requiring an external LLM.
+    """
+    system_prompt = kwargs.get("system_prompt", "")
+    if system_prompt:
+        # LightRAG uses "---Context---" (3 dashes, singular) as marker
+        marker = "---Context---"
+        if marker in system_prompt:
+            return system_prompt.split(marker, 1)[1].strip()
+        return system_prompt
+    return prompt
 
 
 def create_rag() -> LightRAG:

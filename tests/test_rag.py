@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from rag.engine import dummy_llm
 from rag.ingest import format_paper_text
 
 VESPO_PATH = Path(__file__).resolve().parent.parent / "data" / "papers" / "2026-02-11_2602.10693.json"
@@ -14,6 +15,35 @@ VESPO_PATH = Path(__file__).resolve().parent.parent / "data" / "papers" / "2026-
 @pytest.fixture
 def vespo_dict() -> dict:
     return json.loads(VESPO_PATH.read_text())
+
+
+class TestDummyLlm:
+    @pytest.fixture
+    def anyio_backend(self):
+        return "asyncio"
+
+    @pytest.mark.anyio
+    async def test_extracts_context_after_marker(self):
+        system_prompt = "---Role---\nYou are...\n---Context---\nChunk data here"
+        result = await dummy_llm("question", system_prompt=system_prompt)
+        assert result == "Chunk data here"
+        assert "---Role---" not in result
+
+    @pytest.mark.anyio
+    async def test_returns_full_system_prompt_without_marker(self):
+        system_prompt = "Some context without marker"
+        result = await dummy_llm("question", system_prompt=system_prompt)
+        assert result == system_prompt
+
+    @pytest.mark.anyio
+    async def test_returns_prompt_when_no_system_prompt(self):
+        result = await dummy_llm("my question")
+        assert result == "my question"
+
+    @pytest.mark.anyio
+    async def test_returns_prompt_when_empty_system_prompt(self):
+        result = await dummy_llm("my question", system_prompt="")
+        assert result == "my question"
 
 
 class TestFormatPaperText:
