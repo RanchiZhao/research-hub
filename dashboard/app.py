@@ -221,6 +221,93 @@ def parse_search_results(raw: str) -> list[dict]:
     return [{"title": "Search Results", "summary": raw[:500]}]
 
 
+def compute_reading_path(paper_id: str, papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return a topologically sorted reading path leading up to paper_id.
+
+    Only follows "builds_on" and "extends" relationships, and only includes
+    papers that exist in the library (matched by arxiv_id).
+    Prerequisites are placed first; the target paper is last.
+    """
+    arxiv_map: dict[str, dict[str, Any]] = {p["arxiv_id"]: p for p in papers if p.get("arxiv_id")}
+    id_map: dict[str, dict[str, Any]] = {p["id"]: p for p in papers}
+
+    target = id_map.get(paper_id)
+    if not target:
+        return []
+
+    # BFS/DFS to collect all reachable papers via builds_on / extends
+    reachable: dict[str, dict[str, Any]] = {}
+
+    def collect(paper: dict[str, Any]) -> None:
+        pid = paper["id"]
+        if pid in reachable:
+            return
+        reachable[pid] = paper
+        for ref in paper.get("key_references", []):
+            if ref.get("relationship") not in ("builds_on", "extends"):
+                continue
+            ref_paper = arxiv_map.get(ref.get("arxiv_id", ""))
+            if ref_paper:
+                collect(ref_paper)
+
+    collect(target)
+
+    # DFS-based topological sort: prerequisites emerge before the papers that need them
+    order: list[dict[str, Any]] = []
+    in_stack: set[str] = set()
+    done: set[str] = set()
+
+    def topo(paper: dict[str, Any]) -> None:
+        pid = paper["id"]
+        if pid in done or pid in in_stack:
+            return
+        in_stack.add(pid)
+        for ref in paper.get("key_references", []):
+            if ref.get("relationship") not in ("builds_on", "extends"):
+                continue
+            ref_paper = arxiv_map.get(ref.get("arxiv_id", ""))
+            if ref_paper and ref_paper["id"] in reachable:
+                topo(ref_paper)
+        in_stack.discard(pid)
+        done.add(pid)
+        order.append(paper)
+
+    topo(target)
+
+    # Build the result list
+    result: list[dict[str, Any]] = []
+    for i, paper in enumerate(order):
+        # relationship_to_next: how the next paper references this one
+        rel = ""
+        if i < len(order) - 1:
+            next_paper = order[i + 1]
+            for ref in next_paper.get("key_references", []):
+                if ref.get("arxiv_id") and ref["arxiv_id"] == paper.get("arxiv_id"):
+                    rel = ref.get("relationship", "")
+                    break
+        summary = paper.get("summary") or {}
+        result.append(
+            {
+                "id": paper["id"],
+                "title": paper.get("title", ""),
+                "date": paper.get("date", ""),
+                "one_liner": summary.get("one_liner", ""),
+                "relationship_to_next": rel,
+                "reading_order": i + 1,
+                "is_target": paper["id"] == paper_id,
+            }
+        )
+    return result
+
+
+@app.get("/api/reading-path/{paper_id}")
+async def reading_path(paper_id: str) -> JSONResponse:
+    """Generate a reading path for a target paper."""
+    papers = load_papers()
+    path = compute_reading_path(paper_id, papers)
+    return JSONResponse({"path": path})
+
+
 @app.get("/api/paper-summary")
 async def paper_summary(id: str = "") -> JSONResponse:
     """Return method, innovation, and tags for a single paper."""
