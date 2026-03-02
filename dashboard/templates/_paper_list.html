@@ -1,0 +1,26 @@
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {% for paper in papers %}
+  <a href="paper/{{ paper.id }}" class="card bg-base-100 shadow-md hover:shadow-xl transition-shadow cursor-pointer">
+    <div class="card-body">
+      <h3 class="card-title text-base">{{ paper.title }}</h3>
+      {% if paper.summary and paper.summary.one_liner %}
+      <p class="text-sm opacity-70">{{ paper.summary.one_liner }}</p>
+      {% endif %}
+      <div class="card-actions justify-between items-center mt-2">
+        <span class="text-xs opacity-50">{{ paper.date }}</span>
+        <div class="flex flex-wrap gap-1">
+          {% for tag in paper.tags[:3] %}
+          <span class="badge badge-sm badge-primary badge-outline">{{ tag }}</span>
+          {% endfor %}
+          {% if paper.tags | length > 3 %}
+          <span class="badge badge-sm badge-ghost">+{{ paper.tags | length - 3 }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+  {% if not papers %}
+  <div class="col-span-full text-center py-12 opacity-50">No papers found.</div>
+  {% endif %}
+</div>
