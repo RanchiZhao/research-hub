@@ -1,0 +1,79 @@
+{
+  "id": "2026-02-11_2602.10693",
+  "ingested_at": "2026-03-02T17:25:00Z",
+  "source_type": "arxiv_paper",
+  "source_url": "https://arxiv.org/abs/2602.10693",
+  "arxiv_id": "2602.10693",
+  "title": "VESPO: Variational Sequence-Level Soft Policy Optimization for Stable Off-Policy LLM Training",
+  "authors": ["Guobin Shen", "Chenxiao Zhao", "Xiang Cheng", "Lei Huang", "Xing Yu"],
+  "affiliations": [],
+  "date": "2026-02-11",
+  "categories": ["cs.LG", "cs.AI"],
+  "summary": {
+    "problem": "强化学习训练大语言模型时存在训练不稳定问题，主要由策略过时、异步训练和训练推理引擎不匹配导致的分布漂移引起。",
+    "method": "VESPO通过变分框架优化提议分布，为序列级重要性权重推导一个重塑内核。核心是定义双重近似目标，最小化混合KL散度并施加方差约束，得到闭形解φ(W) = W^c₁ · exp(c₂(1-W))。",
+    "innovation": "首次从变分视角系统地解决序列级重要性采样权重的重塑问题，提出不对称超参数设计(c⁺=(2,3)对正优势，c⁻=(3,2)对负优势)应用差异化抑制，无需额外内存开销。",
+    "results": "在Llama-3.2-3B、Qwen3-8B、Qwen3-30B-A3B三个规模上，VESPO在AIME/AMC/MATH基准上取得最佳平均精度，在64倍staleness下保持训练稳定，Qwen3-30B-A3B达66.9%精度(超最优基线2.3%)。",
+    "one_liner": "通过变分重塑序列级重要性权重，用不对称指数核函数实现稳定的异步离策略LLM强化学习，在数学推理任务上显著超越现有方法。"
+  },
+  "tags": [
+    "LLM training",
+    "reinforcement learning",
+    "off-policy learning",
+    "importance sampling",
+    "policy optimization",
+    "training stability",
+    "asynchronous training",
+    "distribution shift",
+    "mathematical reasoning"
+  ],
+  "benchmarks": [
+    {
+      "dataset": "AIME 2024/2025",
+      "metric": "accuracy",
+      "score": "varies by model scale",
+      "notes": "Tested on Llama-3.2-3B, Qwen3-8B, Qwen3-30B-A3B"
+    },
+    {
+      "dataset": "AMC 2023",
+      "metric": "accuracy",
+      "score": "varies by model scale",
+      "notes": "Consistent improvement over baselines"
+    },
+    {
+      "dataset": "MATH-500",
+      "metric": "accuracy",
+      "score": "varies by model scale",
+      "notes": "Standard mathematical problem solving benchmark"
+    },
+    {
+      "dataset": "Average (Qwen3-30B-A3B)",
+      "metric": "average accuracy",
+      "score": "66.9%",
+      "notes": "+2.3% over best baseline"
+    }
+  ],
+  "key_references": [
+    {
+      "title": "GRPO (Group Relative Policy Optimization)",
+      "arxiv_id": null,
+      "relationship": "compares"
+    },
+    {
+      "title": "GSPO (Group Soft Policy Optimization)",
+      "arxiv_id": null,
+      "relationship": "compares"
+    },
+    {
+      "title": "SAPO",
+      "arxiv_id": null,
+      "relationship": "compares"
+    },
+    {
+      "title": "veRL framework",
+      "arxiv_id": null,
+      "relationship": "builds_on"
+    }
+  ],
+  "code_url": "https://github.com/FloyedShen/VESPO"
+}
