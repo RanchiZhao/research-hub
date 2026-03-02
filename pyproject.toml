@@ -10,6 +10,9 @@ dependencies = [
     "httpx>=0.25.0",
 ]
 
+[tool.setuptools.packages.find]
+include = ["models*", "utils*"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
