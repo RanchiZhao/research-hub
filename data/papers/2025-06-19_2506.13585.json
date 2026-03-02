@@ -1,0 +1,33 @@
+{
+  "id": "2025-06-19_2506.13585",
+  "ingested_at": "2026-03-02T13:10:00Z",
+  "source_type": "arxiv_paper",
+  "source_url": "https://arxiv.org/abs/2506.13585",
+  "arxiv_id": "2506.13585",
+  "title": "MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention (CISPO)",
+  "authors": ["Aili Chen", "Aonian Li", "Bangwei Gong", "et al. (126 authors)"],
+  "affiliations": ["MiniMax"],
+  "date": "2025-06-16",
+  "categories": ["cs.CL", "cs.LG"],
+  "summary": {
+    "problem": "Existing RL algorithms (PPO, GRPO, DAPO) clip token-level updates, which inadvertently eliminates gradient contributions from low-probability but critical reasoning tokens (e.g., 'However', 'Recheck'). After the first on-policy update, these tokens get clipped out entirely in subsequent off-policy rounds.",
+    "method": "CISPO clips importance sampling weights directly rather than token-level policy updates. The stop-gradient on the clipped IS weight ensures all tokens contribute gradients while IS weight only serves as a multiplicative scaling factor. Combined with Lightning Attention MoE architecture (456B params, 45.9B active).",
+    "innovation": "By moving clipping from token updates to IS weights with stop-gradient, CISPO preserves gradient signal from all tokens including rare reflective ones. Also: FP32 for LM output head to fix training-inference probability divergence; early truncation for pathological repetition.",
+    "results": "On Qwen2.5-32B, CISPO matches DAPO with only 50% training steps. MiniMax-M1: AIME 2024 86.0%, MATH-500 96.8%, LiveCodeBench 65.0%. Supports 1M token native context. Training: 3 weeks on 512 H800 GPUs.",
+    "one_liner": "CISPO 通过裁剪重要性采样权重（而非 token 级更新）解决了低概率推理 token 被错误裁掉的问题，训练效率比 DAPO 高一倍。"
+  },
+  "tags": ["reinforcement-learning", "importance-sampling", "policy-optimization", "chain-of-thought", "test-time-compute", "mixture-of-experts", "linear-attention", "GRPO-variant", "off-policy-correction", "reasoning-model"],
+  "benchmarks": [
+    {"dataset": "AIME 2024", "metric": "pass@1", "score": "86.0%", "notes": "MiniMax-M1-80K"},
+    {"dataset": "AIME 2025", "metric": "pass@1", "score": "76.9%", "notes": "MiniMax-M1-80K"},
+    {"dataset": "MATH-500", "metric": "pass@1", "score": "96.8%", "notes": "MiniMax-M1-80K"},
+    {"dataset": "LiveCodeBench", "metric": "accuracy", "score": "65.0%", "notes": "Matches Qwen3-235B"},
+    {"dataset": "GPQA Diamond", "metric": "pass@1", "score": "70.0%", "notes": "MiniMax-M1-80K"}
+  ],
+  "key_references": [
+    {"title": "DeepSeekMath (GRPO)", "arxiv_id": "2402.03300", "relationship": "extends"},
+    {"title": "DAPO", "arxiv_id": "2503.14476", "relationship": "compares"},
+    {"title": "Proximal Policy Optimization", "arxiv_id": "1707.06347", "relationship": "builds_on"},
+    {"title": "DeepSeek-R1", "arxiv_id": "2501.12948", "relationship": "compares"}
+  ]
+}

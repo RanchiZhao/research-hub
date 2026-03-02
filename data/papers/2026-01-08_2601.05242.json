@@ -1,0 +1,31 @@
+{
+  "id": "2026-01-08_2601.05242",
+  "ingested_at": "2026-03-02T13:10:00Z",
+  "source_type": "arxiv_paper",
+  "source_url": "https://arxiv.org/abs/2601.05242",
+  "arxiv_id": "2601.05242",
+  "title": "GDPO: Group reward-Decoupled Normalization Policy Optimization for Multi-reward RL Optimization",
+  "authors": ["Shih-Yang Liu", "Xin Dong", "Ximing Lu", "Shizhe Diao", "Peter Belcak", "Mingjie Liu", "Min-Hung Chen", "Hongxu Yin", "Yu-Chiang Frank Wang", "Kwang-Ting Cheng", "Yejin Choi", "Jan Kautz", "Pavlo Molchanov"],
+  "affiliations": ["NVIDIA"],
+  "date": "2026-01-08",
+  "categories": ["cs.CL", "cs.AI", "cs.LG"],
+  "summary": {
+    "problem": "Directly applying GRPO normalization to multi-reward RL settings causes distinct reward combinations to collapse into identical advantage values, reducing training signal resolution.",
+    "method": "GDPO performs per-reward decoupled normalization (zero-mean, unit-variance for each reward independently), then sums individual normalized advantages, and applies batch-wise normalization. Introduces conditioned rewards for handling objectives with large difficulty gaps.",
+    "innovation": "Identifies the 'advantage collapse' problem in multi-reward GRPO — N binary rewards map to only 2 unique advantage groups instead of 2^N. Proposes decoupled normalization and conditioned rewards (gate easier objectives on harder ones being satisfied first).",
+    "results": "Improvements across 3 domains: Tool calling (BFCL-v3: +2.6%), Math reasoning (AIME: +6.3% at 1.5B with 40% fewer length violations), Coding (CodeContests: +2.4%). Works across Qwen2.5 and DeepSeek-R1 families at 1.5B-7B scale.",
+    "one_liner": "GDPO 通过对每个 reward 独立归一化再聚合，解决了多奖励 GRPO 训练中 advantage 坍缩为相同值的问题，在三个任务上一致优于 GRPO。"
+  },
+  "tags": ["GRPO", "multi-reward RL", "policy optimization", "advantage normalization", "reward shaping", "tool calling", "math reasoning", "code reasoning", "conditioned rewards"],
+  "benchmarks": [
+    {"dataset": "BFCL-v3", "metric": "accuracy", "score": "32.81 vs 30.18", "notes": "Qwen2.5-1.5B, +2.63"},
+    {"dataset": "AIME 2024", "metric": "accuracy", "score": "29.4 vs 23.1", "notes": "DeepSeek-R1-1.5B, +6.3"},
+    {"dataset": "AIME 2024", "metric": "accuracy", "score": "57.7 vs 53.3", "notes": "DeepSeek-R1-7B, +4.4"},
+    {"dataset": "CodeContests", "metric": "pass rate", "score": "65.6 vs 63.2", "notes": "DeepSeek-R1-7B, +2.4"}
+  ],
+  "key_references": [
+    {"title": "DeepSeekMath (GRPO)", "arxiv_id": "2402.03300", "relationship": "extends"},
+    {"title": "DAPO", "arxiv_id": "2503.14476", "relationship": "compares"},
+    {"title": "DeepSeek-R1", "arxiv_id": "2501.12948", "relationship": "builds_on"}
+  ]
+}

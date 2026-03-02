@@ -1,0 +1,29 @@
+{
+  "id": "2025-03-18_2503.14476",
+  "ingested_at": "2026-03-02T13:10:00Z",
+  "source_type": "arxiv_paper",
+  "source_url": "https://arxiv.org/abs/2503.14476",
+  "arxiv_id": "2503.14476",
+  "title": "DAPO: An Open-Source LLM Reinforcement Learning System at Scale",
+  "authors": ["Qiying Yu", "Zheng Zhang", "Ruofei Zhu", "Yufeng Yuan", "Xiaochen Zuo", "Yu Yue", "Weinan Dai", "Tiantian Fan", "Gaohong Liu", "Lingjun Liu", "Xin Liu", "Haibin Lin", "Zhiqi Lin", "Bole Ma", "Guangming Sheng", "Yuxuan Tong", "Chi Zhang", "Mofan Zhang", "Wang Zhang", "Hang Zhu", "Jinhua Zhu", "Jiaze Chen", "Jiangjie Chen", "Chengyi Wang", "Hongli Yu", "Yuxuan Song", "Xiangpeng Wei", "Hao Zhou", "Jingjing Liu", "Wei-Ying Ma", "Ya-Qin Zhang", "Lin Yan", "Mu Qiao", "Yonghui Wu", "Mingxuan Wang"],
+  "affiliations": ["ByteDance Seed", "Tsinghua University AIR", "The University of Hong Kong"],
+  "date": "2025-03-18",
+  "categories": ["cs.LG", "cs.CL"],
+  "summary": {
+    "problem": "Large-scale LLM reinforcement learning for reasoning suffers from entropy collapse, inefficient gradient signals, and poor training stability, with existing results lacking reproducible open-source implementations.",
+    "method": "DAPO introduces four techniques on top of GRPO: (1) Clip-Higher with decoupled clipping bounds to prevent entropy collapse, (2) Dynamic Sampling that filters out prompts with all-correct or all-incorrect responses, (3) Token-Level Policy Gradient Loss that normalizes across total tokens, and (4) Overlong Reward Shaping with soft graduated penalties for truncated responses.",
+    "innovation": "The decoupled clipping (separate upper/lower bounds) and dynamic sampling (filtering zero-gradient prompts at batch level) are novel contributions that together solve the entropy collapse and sample efficiency problems in large-scale GRPO training.",
+    "results": "DAPO achieves 50 points on AIME 2024 using Qwen2.5-32B, surpassing DeepSeek-R1-Zero's 47 points with 50% fewer training steps. Ablation shows each technique contributes incrementally: naive GRPO (30) -> +overlong filtering (36) -> +clip-higher (38) -> +soft overlong punishment (41) -> +token-level loss (42) -> +dynamic sampling (50).",
+    "one_liner": "DAPO 在 GRPO 基础上提出解耦裁剪、动态采样等四项技术，用 Qwen2.5-32B 在 AIME 2024 上达到 50 分，超过 DeepSeek-R1-Zero 且训练步数减半。"
+  },
+  "tags": ["GRPO", "reward shaping", "policy optimization", "entropy collapse", "clip-higher", "dynamic sampling", "token-level loss", "rule-based reward", "math reasoning", "open-source RL", "LLM RL training"],
+  "benchmarks": [
+    {"dataset": "AIME 2024", "metric": "accuracy", "score": "50", "notes": "Qwen2.5-32B, surpasses DeepSeek-R1-Zero (47)"},
+    {"dataset": "AIME 2024 (naive GRPO)", "metric": "accuracy", "score": "30", "notes": "Baseline without DAPO techniques"}
+  ],
+  "key_references": [
+    {"title": "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via RL", "arxiv_id": "2501.12948", "relationship": "compares"},
+    {"title": "DeepSeekMath: Pushing the Limits of Mathematical Reasoning (GRPO)", "arxiv_id": "2402.03300", "relationship": "builds_on"},
+    {"title": "Proximal Policy Optimization Algorithms", "arxiv_id": "1707.06347", "relationship": "builds_on"}
+  ]
+}

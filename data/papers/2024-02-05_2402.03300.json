@@ -1,0 +1,31 @@
+{
+  "id": "2024-02-05_2402.03300",
+  "ingested_at": "2026-03-02T13:10:00Z",
+  "source_type": "arxiv_paper",
+  "source_url": "https://arxiv.org/abs/2402.03300",
+  "arxiv_id": "2402.03300",
+  "title": "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models",
+  "authors": ["Zhihong Shao", "Peiyi Wang", "Qihao Zhu", "Runxin Xu", "Junxiao Song", "Xiao Bi", "Haowei Zhang", "Mingchuan Zhang", "Y.K. Li", "Y. Wu", "Daya Guo"],
+  "affiliations": ["DeepSeek-AI", "Tsinghua University", "Peking University"],
+  "date": "2024-02-05",
+  "categories": ["cs.CL", "cs.AI", "cs.LG"],
+  "summary": {
+    "problem": "Mathematical reasoning poses a significant challenge for language models. Open-source models lag far behind closed-source systems like GPT-4 on competition-level math benchmarks.",
+    "method": "Continue pre-training DeepSeek-Coder-Base 7B on 500B tokens (including 120B math tokens from Common Crawl), then SFT on 776K examples, and finally reinforce with GRPO. GRPO eliminates the critic model by sampling G outputs per question and computing advantages from group-relative normalized rewards.",
+    "innovation": "GRPO replaces PPO's per-token value function with a group-relative baseline estimated from multiple sampled outputs per question, cutting memory footprint roughly in half. The paper also provides a unified gradient-based framework showing RFT, DPO, PPO, and GRPO as special cases.",
+    "results": "DeepSeekMath 7B achieves 51.7% on MATH and 88.2% on GSM8K without external tools, surpassing all open-source models up to 70B. GRPO adds +4.9% on MATH and +5.3% on GSM8K over SFT.",
+    "one_liner": "DeepSeekMath 用 120B 高质量数学语料 + GRPO（无 critic 的 PPO 变体，用组内相对奖励做 baseline）把 7B 模型在 MATH 上刷到 51.7%。"
+  },
+  "tags": ["mathematical-reasoning", "GRPO", "PPO", "data-curation", "pre-training", "SFT", "process-supervision", "outcome-supervision", "online-RL", "group-relative-baseline"],
+  "benchmarks": [
+    {"dataset": "MATH", "metric": "accuracy (CoT)", "score": "51.7%", "notes": "DeepSeekMath-RL 7B"},
+    {"dataset": "GSM8K", "metric": "accuracy (CoT)", "score": "88.2%", "notes": "DeepSeekMath-RL 7B"},
+    {"dataset": "MATH", "metric": "accuracy (Tool)", "score": "58.8%", "notes": "With Python"},
+    {"dataset": "MATH", "metric": "accuracy (Base)", "score": "36.2%", "notes": "Surpasses Minerva 540B"}
+  ],
+  "key_references": [
+    {"title": "Minerva: Solving Quantitative Reasoning Problems with Language Models", "arxiv_id": "2206.14858", "relationship": "compares"},
+    {"title": "Proximal Policy Optimization Algorithms", "arxiv_id": "1707.06347", "relationship": "extends"},
+    {"title": "Direct Preference Optimization", "arxiv_id": "2305.18290", "relationship": "compares"}
+  ]
+}

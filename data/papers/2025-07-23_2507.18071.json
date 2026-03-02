@@ -1,0 +1,31 @@
+{
+  "id": "2025-07-23_2507.18071",
+  "ingested_at": "2026-03-02T13:10:00Z",
+  "source_type": "arxiv_paper",
+  "source_url": "https://arxiv.org/abs/2507.18071",
+  "arxiv_id": "2507.18071",
+  "title": "Group Sequence Policy Optimization",
+  "authors": ["Chujie Zheng", "Shixuan Liu", "Mingze Li", "Xiong-Hui Chen", "Bowen Yu", "Chang Gao", "Kai Dang", "Yuqiong Liu", "Rui Men", "An Yang", "Jingren Zhou", "Junyang Lin"],
+  "affiliations": ["Alibaba Group (Qwen Team)"],
+  "date": "2025-07-24",
+  "categories": ["cs.LG", "cs.AI", "cs.CL"],
+  "summary": {
+    "problem": "GRPO uses token-level importance ratios for off-policy correction, but rewards are granted at the sequence level. This mismatch causes high-variance gradients, ratio explosion for long sequences, and training instability especially for MoE models.",
+    "method": "GSPO defines importance ratio based on sequence likelihood with length normalization (geometric mean), and performs sequence-level clipping. The objective mirrors PPO/GRPO but operates on whole-sequence ratios rather than per-token ratios.",
+    "innovation": "The core insight is that the unit of optimization should match the unit of reward. Shifting importance sampling from token-level to sequence-level with length-normalized ratios resolves the mismatch and inherently solves MoE expert-activation volatility.",
+    "results": "GSPO achieves significantly higher training efficiency than GRPO on AIME'24, LiveCodeBench, and CodeForces. It stabilizes MoE training (eliminating reward collapse seen with GRPO on Qwen3-30B-A3B). GSPO contributed to Qwen3-235B-A22B achieving 85.7 on AIME'24.",
+    "one_liner": "GSPO 将 GRPO 的 token 级重要性采样提升到序列级，匹配奖励粒度，解决了长序列比率爆炸和 MoE 训练不稳定问题，是 Qwen3 背后的核心 RL 算法。"
+  },
+  "tags": ["reinforcement-learning", "policy-optimization", "importance-sampling", "sequence-level-optimization", "mixture-of-experts", "GRPO", "Qwen3", "LLM-training"],
+  "benchmarks": [
+    {"dataset": "AIME'24", "metric": "accuracy", "score": "85.7", "notes": "Qwen3-235B-A22B"},
+    {"dataset": "AIME'25", "metric": "accuracy", "score": "81.5", "notes": "Qwen3-235B-A22B"},
+    {"dataset": "LiveCodeBench v5", "metric": "accuracy", "score": "70.7", "notes": "Qwen3-235B-A22B"},
+    {"dataset": "CodeForces", "metric": "rating", "score": "2056", "notes": "Qwen3-235B-A22B"}
+  ],
+  "key_references": [
+    {"title": "DeepSeekMath (GRPO)", "arxiv_id": "2402.03300", "relationship": "extends"},
+    {"title": "DAPO", "arxiv_id": "2503.14476", "relationship": "compares"},
+    {"title": "Qwen3 Technical Report", "arxiv_id": "2505.09388", "relationship": "builds_on"}
+  ]
+}

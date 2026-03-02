@@ -1,0 +1,31 @@
+{
+  "id": "2025-03-26_2503.20783",
+  "ingested_at": "2026-03-02T13:10:00Z",
+  "source_type": "arxiv_paper",
+  "source_url": "https://arxiv.org/abs/2503.20783",
+  "arxiv_id": "2503.20783",
+  "title": "Understanding R1-Zero-Like Training: A Critical Perspective",
+  "authors": ["Zichen Liu", "Changyu Chen", "Wenjun Li", "Penghui Qi", "Tianyu Pang", "Chao Du", "Wee Sun Lee", "Min Lin"],
+  "affiliations": ["Sea AI Lab", "National University of Singapore", "Singapore Management University"],
+  "date": "2025-03-26",
+  "categories": ["cs.LG", "cs.AI", "cs.CL"],
+  "summary": {
+    "problem": "DeepSeek-R1-Zero claims pure RL on base models induces emergent reasoning. The community lacks rigorous understanding of how much comes from RL vs. pretraining, and GRPO contains undocumented optimization biases that distort training dynamics.",
+    "method": "Systematic ablation across base models, templates, and RL algorithms. Mathematical derivation showing GRPO's per-token loss division and per-group std normalization introduce length bias and difficulty bias. Dr. GRPO removes both biases, recovering clean REINFORCE/RLOO-equivalent objective.",
+    "innovation": "Identified two concrete optimization biases in GRPO: length bias (dividing by response length incentivizes shorter correct and longer incorrect answers) and difficulty bias (std normalization over-weights extreme-difficulty questions). Dr. GRPO fixes both by simply removing two normalization terms.",
+    "results": "Dr. GRPO achieves 43.3% on AIME 2024 and 80.0% on MATH500 with Qwen2.5-7B. Training is more token-efficient — incorrect responses no longer grow unboundedly. Also demonstrated that 'Aha moments' exist in base models before any RL.",
+    "one_liner": "GRPO 存在长度偏差和难度偏差两个优化 bug，Dr. GRPO 通过去掉两个归一化项修复，用 7B 在 AIME 2024 达到 43.3%，同时证明 Aha moment 早在预训练模型中就已存在。"
+  },
+  "tags": ["GRPO", "Dr. GRPO", "R1-Zero", "reinforcement learning", "reasoning", "length bias", "policy optimization", "RLOO", "base model analysis", "Aha moment", "math reasoning"],
+  "benchmarks": [
+    {"dataset": "AIME 2024", "metric": "accuracy", "score": "43.3%", "notes": "Oat-Zero-7B (Qwen2.5-7B + Dr. GRPO)"},
+    {"dataset": "MATH500", "metric": "accuracy", "score": "80.0%", "notes": "Oat-Zero-7B"},
+    {"dataset": "AIME 2024", "metric": "accuracy", "score": "20.0%", "notes": "Oat-Zero-1.5B"},
+    {"dataset": "MATH500", "metric": "accuracy", "score": "74.2%", "notes": "Oat-Zero-1.5B"}
+  ],
+  "key_references": [
+    {"title": "DeepSeek-R1", "arxiv_id": "2501.12948", "relationship": "compares"},
+    {"title": "DeepSeekMath (GRPO)", "arxiv_id": "2402.03300", "relationship": "extends"},
+    {"title": "Proximal Policy Optimization", "arxiv_id": "1707.06347", "relationship": "builds_on"}
+  ]
+}

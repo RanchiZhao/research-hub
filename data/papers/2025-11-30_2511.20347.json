@@ -1,0 +1,30 @@
+{
+  "id": "2025-11-30_2511.20347",
+  "ingested_at": "2026-03-02T13:10:00Z",
+  "source_type": "arxiv_paper",
+  "source_url": "https://arxiv.org/abs/2511.20347",
+  "arxiv_id": "2511.20347",
+  "title": "Soft Adaptive Policy Optimization",
+  "authors": ["Chang Gao", "Chujie Zheng", "Xiong-Hui Chen", "Kai Dang", "Shixuan Liu", "Bowen Yu", "An Yang", "Shuai Bai", "Jingren Zhou", "Junyang Lin"],
+  "affiliations": ["Qwen Team, Alibaba Inc"],
+  "date": "2025-11-25",
+  "categories": ["cs.LG", "cs.AI", "cs.CL"],
+  "summary": {
+    "problem": "Token-level importance ratios in LLM RL training exhibit high variance (especially in MoE models). Existing methods use hard clipping which either suppresses entire sequences (GSPO) or creates discontinuous gradient landscapes (GRPO).",
+    "method": "SAPO replaces hard clipping with a smooth, temperature-controlled sigmoid gate f(x) = σ(τ(x-1)) * 4/τ that adaptively attenuates off-policy updates at the token level. Uses asymmetric temperatures (τ_neg > τ_pos) to preferentially suppress high-variance negative gradients.",
+    "innovation": "Three-fold: (1) Continuous soft gating replaces brittle hard clipping; (2) Token-adaptive attenuation selectively down-weights only problematic tokens rather than suppressing entire sequences; (3) Asymmetric temperature design treats positive and negative advantage updates differently.",
+    "results": "On cold-start Qwen3-30B-A3B, SAPO maintained stable learning where GSPO and GRPO experienced early collapse. Large-scale validation on Qwen3-VL model series showed consistent gains across text and multimodal tasks.",
+    "one_liner": "SAPO 用可微的 sigmoid 软门控替换 GRPO/GSPO 的硬裁剪，token 级自适应衰减离策略更新，在 MoE 冷启动和多模态任务上实现更稳定的训练。"
+  },
+  "tags": ["reinforcement-learning", "policy-optimization", "soft-gating", "trust-region", "token-level-optimization", "MoE-stability", "GRPO-variant", "Qwen3", "math-reasoning"],
+  "benchmarks": [
+    {"dataset": "AIME25", "metric": "Pass@1", "score": "SAPO > GSPO, GRPO-R2", "notes": "Qwen3-30B-A3B cold-start"},
+    {"dataset": "HMMT25", "metric": "Pass@1", "score": "Superior", "notes": "Comparable training budget"},
+    {"dataset": "LiveCodeBench v6", "metric": "Pass@1", "score": "Consistent gains", "notes": "Qwen3-VL series"}
+  ],
+  "key_references": [
+    {"title": "DeepSeekMath (GRPO)", "arxiv_id": "2402.03300", "relationship": "extends"},
+    {"title": "Group Sequence Policy Optimization (GSPO)", "arxiv_id": "2507.18071", "relationship": "extends"},
+    {"title": "Proximal Policy Optimization", "arxiv_id": "1707.06347", "relationship": "builds_on"}
+  ]
+}
