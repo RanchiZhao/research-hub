@@ -1,13 +1,32 @@
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="paper-grid">
   {% for paper in papers %}
-  <a href="paper/{{ paper.id }}" class="card bg-base-100 shadow-md hover:shadow-xl transition-shadow cursor-pointer">
-    <div class="card-body">
-      <h3 class="card-title text-base">{{ paper.title }}</h3>
+  <a href="paper/{{ paper.id }}"
+     class="paper-card card bg-base-100 shadow-md hover:shadow-xl transition-shadow cursor-pointer"
+     data-title="{{ paper.title | lower }}"
+     data-oneliner="{{ (paper.summary.one_liner if paper.summary and paper.summary.one_liner else '') | lower }}"
+     data-tags="{{ paper.tags | join(',') | lower }}">
+    <div class="card-body p-4 gap-1">
+      <h3 class="card-title text-base leading-snug">{{ paper.title }}</h3>
+      {% if paper.authors %}
+      <p class="text-xs opacity-60">{{ paper.authors[0] }}{% if paper.authors | length > 1 %} et al.{% endif %}</p>
+      {% endif %}
       {% if paper.summary and paper.summary.one_liner %}
-      <p class="text-sm opacity-70">{{ paper.summary.one_liner }}</p>
+      <p class="text-sm opacity-70 line-clamp-2">{{ paper.summary.one_liner }}</p>
+      {% endif %}
+      {% if paper.benchmarks %}
+      <div class="flex flex-wrap gap-2 mt-1">
+        {% for bm in paper.benchmarks[:2] %}
+        <span class="badge badge-sm badge-accent badge-outline">{{ bm.dataset }}: {{ bm.score }}</span>
+        {% endfor %}
+      </div>
       {% endif %}
       <div class="card-actions justify-between items-center mt-2">
-        <span class="text-xs opacity-50">{{ paper.date }}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs opacity-50">{{ paper.date }}</span>
+          {% if paper.key_references %}
+          <span class="text-xs opacity-50">· {{ paper.key_references | length }} ref{{ 's' if paper.key_references | length != 1 else '' }}</span>
+          {% endif %}
+        </div>
         <div class="flex flex-wrap gap-1">
           {% for tag in paper.tags[:3] %}
           <span class="badge badge-sm badge-primary badge-outline">{{ tag }}</span>
