@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paper Graph — Research Hub</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+<body class="min-h-screen bg-base-200">
+
+  <div class="navbar bg-base-100 shadow-lg">
+    <a href="./" class="btn btn-ghost text-xl">Research Hub</a>
+    <a href="./graph" class="btn btn-ghost btn-sm">Graph</a>
+  </div>
+
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    <h1 class="text-2xl font-bold mb-4">Paper Graph</h1>
+
+    <!-- Legend -->
+    <div class="flex flex-wrap gap-4 mb-4 text-sm">
+      <span class="flex items-center gap-1">
+        <svg width="30" height="10"><line x1="0" y1="5" x2="30" y2="5" stroke="#60a5fa" stroke-width="2"/></svg>
+        extends
+      </span>
+      <span class="flex items-center gap-1">
+        <svg width="30" height="10"><line x1="0" y1="5" x2="30" y2="5" stroke="#60a5fa" stroke-width="2" stroke-dasharray="6,3"/></svg>
+        builds_on
+      </span>
+      <span class="flex items-center gap-1">
+        <svg width="30" height="10"><line x1="0" y1="5" x2="30" y2="5" stroke="#60a5fa" stroke-width="2" stroke-dasharray="2,3"/></svg>
+        compares
+      </span>
+    </div>
+
+    <div class="card bg-base-100 shadow">
+      <div class="card-body p-2">
+        <svg id="graph-svg" width="100%" height="600"></svg>
+      </div>
+    </div>
+  </div>
+
+<script>
+(async function() {
+  const resp = await fetch('./api/graph-data');
+  const data = await resp.json();
+
+  if (data.nodes.length === 0) {
+    document.getElementById('graph-svg').innerHTML =
+      '<text x="50%" y="50%" text-anchor="middle" fill="#888" font-size="16">No papers yet.</text>';
+    return;
+  }
+
+  const svg = d3.select('#graph-svg');
+  const width = svg.node().getBoundingClientRect().width;
+  const height = 600;
+
+  svg.attr('viewBox', [0, 0, width, height]);
+
+  // Count incoming references per node for sizing
+  const inDegree = {};
+  data.nodes.forEach(n => { inDegree[n.id] = 0; });
+  data.links.forEach(l => {
+    inDegree[l.target] = (inDegree[l.target] || 0) + 1;
+  });
+
+  // Arrow markers
+  const defs = svg.append('defs');
+  defs.append('marker')
+    .attr('id', 'arrow')
+    .attr('viewBox', '0 -5 10 10')
+    .attr('refX', 20)
+    .attr('refY', 0)
+    .attr('markerWidth', 6)
+    .attr('markerHeight', 6)
+    .attr('orient', 'auto')
+    .append('path')
+    .attr('d', 'M0,-5L10,0L0,5')
+    .attr('fill', '#60a5fa');
+
+  // Edge style helper
+  function strokeDash(rel) {
+    if (rel === 'builds_on') return '6,3';
+    if (rel === 'compares') return '2,3';
+    return null; // solid for extends
+  }
+
+  const simulation = d3.forceSimulation(data.nodes)
+    .force('link', d3.forceLink(data.links).id(d => d.id).distance(120))
+    .force('charge', d3.forceManyBody().strength(-300))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force('collide', d3.forceCollide(40));
+
+  const link = svg.append('g')
+    .selectAll('line')
+    .data(data.links)
+    .join('line')
+    .attr('stroke', '#60a5fa')
+    .attr('stroke-width', 1.5)
+    .attr('stroke-dasharray', d => strokeDash(d.relationship))
+    .attr('marker-end', 'url(#arrow)');
+
+  const node = svg.append('g')
+    .selectAll('g')
+    .data(data.nodes)
+    .join('g')
+    .attr('cursor', 'pointer')
+    .on('click', (event, d) => {
+      window.location.href = './paper/' + d.id;
+    })
+    .call(d3.drag()
+      .on('start', (event, d) => {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x; d.fy = d.y;
+      })
+      .on('drag', (event, d) => {
+        d.fx = event.x; d.fy = event.y;
+      })
+      .on('end', (event, d) => {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null; d.fy = null;
+      })
+    );
+
+  node.append('circle')
+    .attr('r', d => 8 + (inDegree[d.id] || 0) * 3)
+    .attr('fill', '#3b82f6')
+    .attr('stroke', '#93c5fd')
+    .attr('stroke-width', 1.5);
+
+  node.append('text')
+    .text(d => d.name)
+    .attr('dy', d => -(12 + (inDegree[d.id] || 0) * 3))
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#e2e8f0')
+    .attr('font-size', '12px');
+
+  // Tooltip on hover
+  node.append('title').text(d => d.name);
+
+  simulation.on('tick', () => {
+    link
+      .attr('x1', d => d.source.x)
+      .attr('y1', d => d.source.y)
+      .attr('x2', d => d.target.x)
+      .attr('y2', d => d.target.y);
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
+})();
+</script>
+
+</body>
+</html>

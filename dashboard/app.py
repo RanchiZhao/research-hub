@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "papers"
@@ -53,6 +53,42 @@ def compute_stats(papers: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def build_graph_data(papers: list[dict[str, Any]]) -> dict[str, Any]:
+    """Build nodes and links for D3.js force-directed graph."""
+    arxiv_map: dict[str, dict[str, Any]] = {}
+    for p in papers:
+        aid = p.get("arxiv_id")
+        if aid:
+            arxiv_map[aid] = p
+
+    nodes = [
+        {
+            "id": p["id"],
+            "name": p.get("title", "")[:30],
+            "arxiv_id": p.get("arxiv_id"),
+        }
+        for p in papers
+    ]
+
+    links: list[dict[str, str]] = []
+    for p in papers:
+        for ref in p.get("key_references", []):
+            target_arxiv = ref.get("arxiv_id")
+            if not target_arxiv:
+                continue
+            target_paper = arxiv_map.get(target_arxiv)
+            if target_paper:
+                links.append(
+                    {
+                        "source": p["id"],
+                        "target": target_paper["id"],
+                        "relationship": ref.get("relationship", "extends"),
+                    }
+                )
+
+    return {"nodes": nodes, "links": links}
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -74,8 +110,10 @@ async def paper_detail(request: Request, paper_id: str) -> HTMLResponse:
     if paper is None:
         return HTMLResponse("<h1>Paper not found</h1>", status_code=404)
     mindmap = load_mindmap(paper_id)
+    arxiv_map = {p["arxiv_id"]: p for p in papers if p.get("arxiv_id")}
     return templates.TemplateResponse(
-        "paper.html", {"request": request, "paper": paper, "mindmap": mindmap}
+        "paper.html",
+        {"request": request, "paper": paper, "mindmap": mindmap, "arxiv_map": arxiv_map},
     )
 
 
@@ -94,3 +132,15 @@ async def frag_stats(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         "_stats.html", {"request": request, "stats": stats}
     )
+
+
+@app.get("/graph", response_class=HTMLResponse)
+async def graph(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse("graph.html", {"request": request})
+
+
+@app.get("/api/graph-data")
+async def graph_data() -> JSONResponse:
+    papers = load_papers()
+    data = build_graph_data(papers)
+    return JSONResponse(data)
