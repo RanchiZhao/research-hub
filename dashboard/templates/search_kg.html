@@ -28,13 +28,9 @@
       <span class="loading loading-spinner loading-lg"></span>
     </div>
 
-    <div id="results" class="hidden">
+    <div id="results" class="hidden space-y-4">
       <h2 class="text-lg font-semibold mb-3">Results</h2>
-      <div id="results-content" class="card bg-base-100 shadow">
-        <div class="card-body">
-          <p id="results-text" class="whitespace-pre-wrap text-sm"></p>
-        </div>
-      </div>
+      <div id="results-content"></div>
     </div>
 
     <div id="empty" class="hidden text-center py-8 opacity-50">
@@ -48,8 +44,68 @@
   var btn = document.getElementById('search-btn');
   var loading = document.getElementById('loading');
   var results = document.getElementById('results');
-  var resultsText = document.getElementById('results-text');
+  var resultsContent = document.getElementById('results-content');
   var empty = document.getElementById('empty');
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderResults(papers) {
+    resultsContent.innerHTML = '';
+    papers.forEach(function(p) {
+      var card = document.createElement('div');
+      card.className = 'card bg-base-100 shadow mb-3';
+
+      var body = document.createElement('div');
+      body.className = 'card-body p-4';
+
+      var title = document.createElement('h3');
+      title.className = 'card-title text-base';
+      title.textContent = p.title || 'Untitled';
+      body.appendChild(title);
+
+      if (p.date || p.authors) {
+        var meta = document.createElement('p');
+        meta.className = 'text-xs opacity-60 mb-2';
+        meta.textContent = [p.date, p.authors].filter(Boolean).join(' · ');
+        body.appendChild(meta);
+      }
+
+      if (p.summary) {
+        var summary = document.createElement('p');
+        summary.className = 'text-sm mb-2';
+        summary.textContent = p.summary;
+        body.appendChild(summary);
+      }
+
+      if (p.tags && p.tags.length) {
+        var tagDiv = document.createElement('div');
+        tagDiv.className = 'flex flex-wrap gap-1 mt-2';
+        p.tags.forEach(function(t) {
+          var badge = document.createElement('span');
+          badge.className = 'badge badge-outline badge-xs';
+          badge.textContent = t;
+          tagDiv.appendChild(badge);
+        });
+        body.appendChild(tagDiv);
+      }
+
+      if (p.benchmarks && p.benchmarks.length) {
+        var benchDiv = document.createElement('div');
+        benchDiv.className = 'mt-2 text-xs opacity-70';
+        benchDiv.textContent = p.benchmarks.join(' | ');
+        body.appendChild(benchDiv);
+      }
+
+      card.appendChild(body);
+      resultsContent.appendChild(card);
+    });
+  }
 
   async function doSearch() {
     var question = input.value.trim();
@@ -68,13 +124,17 @@
       });
       var data = await resp.json();
       if (data.results && data.results.length > 0) {
-        resultsText.textContent = typeof data.results === 'string' ? data.results : JSON.stringify(data.results, null, 2);
+        if (Array.isArray(data.results)) {
+          renderResults(data.results);
+        } else {
+          resultsContent.innerHTML = '<div class="card bg-base-100 shadow"><div class="card-body"><p class="whitespace-pre-wrap text-sm">' + escapeHtml(data.results) + '</p></div></div>';
+        }
         results.classList.remove('hidden');
       } else {
         empty.classList.remove('hidden');
       }
     } catch (err) {
-      resultsText.textContent = 'Error: ' + err.message;
+      resultsContent.innerHTML = '<div class="card bg-base-100 shadow"><div class="card-body"><p class="text-sm text-error">Error: ' + escapeHtml(err.message) + '</p></div></div>';
       results.classList.remove('hidden');
     } finally {
       loading.classList.add('hidden');
