@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diff — Research Hub</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-base-200">
+
+  <div class="navbar bg-base-100 shadow-lg">
+    <a href="./" class="btn btn-ghost text-xl">Research Hub</a>
+    <a href="./graph" class="btn btn-ghost btn-sm">Graph</a>
+    <a href="./timeline" class="btn btn-ghost btn-sm">Timeline</a>
+    <a href="./compare" class="btn btn-ghost btn-sm">Compare</a>
+    <a href="./search-kg" class="btn btn-ghost btn-sm">Search</a>
+  </div>
+
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <h1 class="text-2xl font-bold mb-6">Paper Diff</h1>
+
+    <!-- Paper Selectors -->
+    <div class="grid grid-cols-2 gap-4 mb-8">
+      <div class="form-control">
+        <label class="label"><span class="label-text font-semibold">Paper A</span></label>
+        <select id="select-a" class="select select-bordered select-sm w-full">
+          <option value="">— select paper —</option>
+          {% for p in papers %}
+          <option value="{{ p.id }}" {% if paper_a and paper_a.id == p.id %}selected{% endif %}>
+            {{ p.date }} · {{ p.title[:70] }}{% if p.title|length > 70 %}…{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-control">
+        <label class="label"><span class="label-text font-semibold">Paper B</span></label>
+        <select id="select-b" class="select select-bordered select-sm w-full">
+          <option value="">— select paper —</option>
+          {% for p in papers %}
+          <option value="{{ p.id }}" {% if paper_b and paper_b.id == p.id %}selected{% endif %}>
+            {{ p.date }} · {{ p.title[:70] }}{% if p.title|length > 70 %}…{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    {% if paper_a or paper_b %}
+    <!-- Side-by-side diff content -->
+    <div class="space-y-6">
+
+      <!-- Header row: title, date, authors -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="card bg-base-100 shadow">
+          <div class="card-body p-4">
+            {% if paper_a %}
+            <h2 class="text-lg font-bold leading-snug">{{ paper_a.title }}</h2>
+            <div class="text-sm opacity-60 mt-1">{{ paper_a.date }}</div>
+            {% if paper_a.authors %}
+            <div class="text-xs opacity-50 mt-1">{{ paper_a.authors | join(', ') }}</div>
+            {% endif %}
+            {% else %}
+            <p class="opacity-40 italic text-sm">No paper selected</p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="card bg-base-100 shadow">
+          <div class="card-body p-4">
+            {% if paper_b %}
+            <h2 class="text-lg font-bold leading-snug">{{ paper_b.title }}</h2>
+            <div class="text-sm opacity-60 mt-1">{{ paper_b.date }}</div>
+            {% if paper_b.authors %}
+            <div class="text-xs opacity-50 mt-1">{{ paper_b.authors | join(', ') }}</div>
+            {% endif %}
+            {% else %}
+            <p class="opacity-40 italic text-sm">No paper selected</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary fields -->
+      {% for field, label in [('problem', 'Problem'), ('method', 'Method'), ('innovation', 'Innovation'), ('results', 'Results')] %}
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-wider opacity-50 mb-2">{{ label }}</div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="card bg-base-100 shadow">
+            <div class="card-body p-4 text-sm">
+              {% if paper_a and paper_a.summary and paper_a.summary.get(field) %}
+              {{ paper_a.summary[field] }}
+              {% else %}
+              <span class="opacity-30 italic">—</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="card bg-base-100 shadow">
+            <div class="card-body p-4 text-sm">
+              {% if paper_b and paper_b.summary and paper_b.summary.get(field) %}
+              {{ paper_b.summary[field] }}
+              {% else %}
+              <span class="opacity-30 italic">—</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Tags -->
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-wider opacity-50 mb-2">Tags</div>
+        <div class="grid grid-cols-2 gap-4">
+          {% set tags_a = paper_a.tags if paper_a and paper_a.tags else [] %}
+          {% set tags_b = paper_b.tags if paper_b and paper_b.tags else [] %}
+          {% set common_tags = tags_a | select('in', tags_b) | list %}
+          <div class="card bg-base-100 shadow">
+            <div class="card-body p-4">
+              {% if tags_a %}
+              <div class="flex flex-wrap gap-1">
+                {% for tag in tags_a %}
+                <span class="badge badge-sm {% if tag in common_tags %}badge-primary{% else %}badge-outline{% endif %}">{{ tag }}</span>
+                {% endfor %}
+              </div>
+              {% else %}
+              <span class="opacity-30 italic text-sm">—</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="card bg-base-100 shadow">
+            <div class="card-body p-4">
+              {% if tags_b %}
+              <div class="flex flex-wrap gap-1">
+                {% for tag in tags_b %}
+                <span class="badge badge-sm {% if tag in common_tags %}badge-primary{% else %}badge-outline{% endif %}">{{ tag }}</span>
+                {% endfor %}
+              </div>
+              {% else %}
+              <span class="opacity-30 italic text-sm">—</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% if common_tags %}
+        <div class="text-xs opacity-40 mt-1">filled = shared &nbsp;·&nbsp; outline = unique</div>
+        {% endif %}
+      </div>
+
+      <!-- Benchmarks -->
+      {% set benchmarks_a = paper_a.benchmarks if paper_a and paper_a.benchmarks else [] %}
+      {% set benchmarks_b = paper_b.benchmarks if paper_b and paper_b.benchmarks else [] %}
+      {% if benchmarks_a or benchmarks_b %}
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-wider opacity-50 mb-2">Benchmarks</div>
+        <div class="card bg-base-100 shadow">
+          <div class="card-body p-4 overflow-x-auto">
+            <table class="table table-sm table-zebra">
+              <thead>
+                <tr>
+                  <th>Dataset</th>
+                  <th>Metric</th>
+                  <th>{{ paper_a.title[:30] if paper_a else '—' }}{% if paper_a and paper_a.title|length > 30 %}…{% endif %}</th>
+                  <th>{{ paper_b.title[:30] if paper_b else '—' }}{% if paper_b and paper_b.title|length > 30 %}…{% endif %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {# Build union of (dataset, metric) pairs #}
+                {% set seen = [] %}
+                {% set rows = [] %}
+                {% for b in benchmarks_a %}
+                  {% set key = b.dataset ~ '|' ~ b.metric %}
+                  {% if key not in seen %}
+                    {% if seen.append(key) %}{% endif %}
+                    {% if rows.append({'dataset': b.dataset, 'metric': b.metric}) %}{% endif %}
+                  {% endif %}
+                {% endfor %}
+                {% for b in benchmarks_b %}
+                  {% set key = b.dataset ~ '|' ~ b.metric %}
+                  {% if key not in seen %}
+                    {% if seen.append(key) %}{% endif %}
+                    {% if rows.append({'dataset': b.dataset, 'metric': b.metric}) %}{% endif %}
+                  {% endif %}
+                {% endfor %}
+
+                {% for row in rows %}
+                  {% set score_a = namespace(val=None, notes='') %}
+                  {% set score_b = namespace(val=None, notes='') %}
+                  {% for b in benchmarks_a %}
+                    {% if b.dataset == row.dataset and b.metric == row.metric %}
+                      {% set score_a.val = b.score %}
+                      {% set score_a.notes = b.notes or '' %}
+                    {% endif %}
+                  {% endfor %}
+                  {% for b in benchmarks_b %}
+                    {% if b.dataset == row.dataset and b.metric == row.metric %}
+                      {% set score_b.val = b.score %}
+                      {% set score_b.notes = b.notes or '' %}
+                    {% endif %}
+                  {% endfor %}
+                <tr>
+                  <td class="font-medium">{{ row.dataset }}</td>
+                  <td class="opacity-70">{{ row.metric }}</td>
+                  <td>
+                    {% if score_a.val is not none %}
+                    <span class="diff-score" data-score-a="{{ score_a.val }}" data-score-b="{{ score_b.val if score_b.val is not none else '' }}">{{ score_a.val }}</span>
+                    {% if score_a.notes %}<span class="text-xs opacity-50 ml-1">{{ score_a.notes }}</span>{% endif %}
+                    {% else %}
+                    <span class="opacity-30">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if score_b.val is not none %}
+                    <span class="diff-score" data-score-a="{{ score_a.val if score_a.val is not none else '' }}" data-score-b="{{ score_b.val }}">{{ score_b.val }}</span>
+                    {% if score_b.notes %}<span class="text-xs opacity-50 ml-1">{{ score_b.notes }}</span>{% endif %}
+                    {% else %}
+                    <span class="opacity-30">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+    {% else %}
+    <div class="card bg-base-100 shadow">
+      <div class="card-body text-center py-16 opacity-50">
+        <p class="text-lg">Select two papers above to compare them side-by-side.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+<script>
+(function() {
+  // Navigate when selects change
+  function navigate() {
+    var a = document.getElementById('select-a').value;
+    var b = document.getElementById('select-b').value;
+    var url = new URL(window.location.href);
+    if (a) url.searchParams.set('a', a); else url.searchParams.delete('a');
+    if (b) url.searchParams.set('b', b); else url.searchParams.delete('b');
+    window.location.href = url.toString();
+  }
+
+  document.getElementById('select-a').addEventListener('change', navigate);
+  document.getElementById('select-b').addEventListener('change', navigate);
+
+  // Highlight best benchmark scores
+  function parseNumeric(score) {
+    var m = String(score || '').match(/([\d.]+)/);
+    return m ? parseFloat(m[1]) : null;
+  }
+
+  document.querySelectorAll('tr').forEach(function(row) {
+    var spans = row.querySelectorAll('.diff-score');
+    if (spans.length < 2) return;
+    var first = spans[0];
+    var second = spans[1];
+    var va = parseNumeric(first.dataset.scoreA || first.textContent);
+    var vb = parseNumeric(second.dataset.scoreB || second.textContent);
+    if (va === null || vb === null) return;
+    if (va > vb) {
+      first.classList.add('text-success', 'font-bold');
+    } else if (vb > va) {
+      second.classList.add('text-success', 'font-bold');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
