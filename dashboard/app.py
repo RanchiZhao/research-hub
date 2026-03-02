@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -165,6 +166,61 @@ async def search_kg_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse("search_kg.html", {"request": request})
 
 
+def parse_content_string(content: str) -> dict | None:
+    """Parse a 'Title: X\nAuthors: Y\n...' content string into a dict."""
+    if not content:
+        return None
+    result: dict[str, Any] = {}
+    for line in content.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("Title: "):
+            result["title"] = line[7:]
+        elif line.startswith("Authors: "):
+            result["authors"] = line[9:]
+        elif line.startswith("Date: "):
+            result["date"] = line[6:]
+        elif line.startswith("Summary: "):
+            result["summary"] = line[9:]
+        elif line.startswith("Problem: "):
+            result["problem"] = line[9:]
+        elif line.startswith("Method: "):
+            result["method"] = line[8:]
+        elif line.startswith("Innovation: "):
+            result["innovation"] = line[12:]
+        elif line.startswith("Results: "):
+            result["results"] = line[9:]
+        elif line.startswith("Tags: "):
+            result["tags"] = [t.strip() for t in line[6:].split(",")]
+        elif line.startswith("Benchmark: "):
+            result.setdefault("benchmarks", []).append(line[11:])
+    return result if result.get("title") else None
+
+
+def parse_search_results(raw: str) -> list[dict]:
+    """Parse LightRAG raw output into structured paper chunks."""
+    if not raw or not raw.strip():
+        return []
+
+    json_match = re.search(r"```json\s*(.*?)```", raw, re.DOTALL)
+    if json_match:
+        json_text = json_match.group(1).strip()
+        chunks = []
+        for match in re.finditer(r'\{[^{}]*"content"[^{}]*\}', json_text, re.DOTALL):
+            try:
+                obj = json.loads(match.group())
+                chunk = parse_content_string(obj.get("content", ""))
+                if chunk:
+                    chunks.append(chunk)
+            except json.JSONDecodeError:
+                continue
+        if chunks:
+            return chunks
+
+    return [{"title": "Search Results", "summary": raw[:500]}]
+
+
 @app.post("/api/search-kg")
 async def api_search_kg(request: Request) -> JSONResponse:
     body = await request.json()
@@ -177,6 +233,7 @@ async def api_search_kg(request: Request) -> JSONResponse:
     await rag.initialize_storages()
     try:
         result = await rag.aquery(question, param=QueryParam(mode="naive"))
-        return JSONResponse({"results": result})
+        papers = parse_search_results(result)
+        return JSONResponse({"results": papers})
     finally:
         await rag.finalize_storages()
