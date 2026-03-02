@@ -111,9 +111,22 @@ async def paper_detail(request: Request, paper_id: str) -> HTMLResponse:
         return HTMLResponse("<h1>Paper not found</h1>", status_code=404)
     mindmap = load_mindmap(paper_id)
     arxiv_map = {p["arxiv_id"]: p for p in papers if p.get("arxiv_id")}
+
+    # Compute prev/next papers (papers are sorted newest-first)
+    idx = next(i for i, p in enumerate(papers) if p.get("id") == paper_id)
+    prev_paper = papers[idx - 1] if idx > 0 else None
+    next_paper = papers[idx + 1] if idx < len(papers) - 1 else None
+
     return templates.TemplateResponse(
         "paper.html",
-        {"request": request, "paper": paper, "mindmap": mindmap, "arxiv_map": arxiv_map},
+        {
+            "request": request,
+            "paper": paper,
+            "mindmap": mindmap,
+            "arxiv_map": arxiv_map,
+            "prev_paper": prev_paper,
+            "next_paper": next_paper,
+        },
     )
 
 

@@ -20,6 +20,20 @@
 
   <div class="container mx-auto px-4 py-8 max-w-4xl">
 
+    <!-- Top Navigation -->
+    <div class="flex justify-between mb-4">
+      {% if prev_paper %}
+      <a href="../paper/{{ prev_paper.id }}" class="btn btn-outline btn-sm">&larr; Previous</a>
+      {% else %}
+      <span></span>
+      {% endif %}
+      {% if next_paper %}
+      <a href="../paper/{{ next_paper.id }}" class="btn btn-outline btn-sm">Next &rarr;</a>
+      {% else %}
+      <span></span>
+      {% endif %}
+    </div>
+
     <!-- Header -->
     <h1 class="text-3xl font-bold mb-2">{{ paper.title }}</h1>
     <div class="flex flex-wrap items-center gap-3 mb-6 text-sm opacity-70">
@@ -154,6 +168,20 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/markmap-autoloader"></script>
     {% endif %}
+
+    <!-- Bottom Navigation -->
+    <div class="flex justify-between mt-8 pt-4 border-t border-base-300">
+      {% if prev_paper %}
+      <a href="../paper/{{ prev_paper.id }}" class="btn btn-outline btn-sm">&larr; Previous</a>
+      {% else %}
+      <span></span>
+      {% endif %}
+      {% if next_paper %}
+      <a href="../paper/{{ next_paper.id }}" class="btn btn-outline btn-sm">Next &rarr;</a>
+      {% else %}
+      <span></span>
+      {% endif %}
+    </div>
 
   </div>
 
