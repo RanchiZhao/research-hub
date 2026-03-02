@@ -190,6 +190,64 @@
     <script src="https://cdn.jsdelivr.net/npm/markmap-autoloader"></script>
     {% endif %}
 
+    <!-- Reading Path -->
+    <div class="mb-8">
+      <h2 class="text-xl font-bold mb-3">Reading Path</h2>
+      <div id="reading-path-content" class="flex items-center justify-center py-4">
+        <span class="loading loading-spinner loading-md"></span>
+      </div>
+    </div>
+
+    <script>
+    (async () => {
+      const paperId = {{ paper.id | tojson }};
+      const container = document.getElementById('reading-path-content');
+      try {
+        const resp = await fetch(`/api/reading-path/${encodeURIComponent(paperId)}`);
+        const data = await resp.json();
+        const path = data.path;
+
+        if (!path || path.length <= 1) {
+          container.innerHTML = '<p class="text-sm opacity-60">This paper has no prerequisite readings in the library.</p>';
+          return;
+        }
+
+        const items = path.map((item, idx) => {
+          const isTarget = item.is_target;
+          const cardBg = isTarget ? 'bg-primary text-primary-content' : 'bg-base-100';
+          const titleClass = isTarget ? 'font-semibold' : 'font-semibold hover:underline';
+          const titleEl = isTarget
+            ? `<span class="${titleClass}">${item.title}</span>`
+            : `<a href="/paper/${item.id}" class="${titleClass} link">${item.title}</a>`;
+          const oneLiner = item.one_liner
+            ? `<p class="text-sm mt-1 opacity-80">${item.one_liner}</p>` : '';
+          const connector = idx < path.length - 1
+            ? `<div class="ml-[14px] w-0.5 h-4 bg-base-300"></div>` : '';
+          const relBadge = item.relationship_to_next
+            ? `<span class="badge badge-ghost badge-xs ml-1">${item.relationship_to_next}</span>` : '';
+          return `
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 w-7 h-7 rounded-full ${isTarget ? 'bg-primary-content text-primary' : 'bg-base-300 text-base-content'} flex items-center justify-center text-xs font-bold">${item.reading_order}</div>
+              <div class="card ${cardBg} shadow flex-1">
+                <div class="card-body py-3 px-4">
+                  ${titleEl}
+                  <p class="text-xs opacity-60">${item.date}</p>
+                  ${oneLiner}
+                  ${relBadge}
+                </div>
+              </div>
+            </div>
+            ${connector}
+          `;
+        }).join('');
+
+        container.innerHTML = `<div class="w-full">${items}</div>`;
+      } catch (e) {
+        container.innerHTML = '<p class="text-sm text-error">Failed to load reading path.</p>';
+      }
+    })();
+    </script>
+
     <!-- Bottom Navigation -->
     <div class="flex justify-between mt-8 pt-4 border-t border-base-300">
       {% if prev_paper %}
