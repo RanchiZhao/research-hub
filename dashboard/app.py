@@ -282,6 +282,49 @@ async def compare_data(ids: str = "") -> JSONResponse:
     )
 
 
+def build_timeline_data(papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return papers sorted oldest-first with in-library connections resolved."""
+    arxiv_map: dict[str, dict[str, Any]] = {
+        p["arxiv_id"]: p for p in papers if p.get("arxiv_id")
+    }
+    sorted_papers = sorted(papers, key=lambda p: p.get("date", ""))
+    result = []
+    for p in sorted_papers:
+        connections = []
+        for ref in p.get("key_references", []):
+            target_arxiv = ref.get("arxiv_id")
+            if target_arxiv and target_arxiv in arxiv_map:
+                target = arxiv_map[target_arxiv]
+                connections.append(
+                    {
+                        "id": target["id"],
+                        "title": target.get("title", ""),
+                        "arxiv_id": target_arxiv,
+                        "relationship": ref.get("relationship", "extends"),
+                    }
+                )
+        summary = p.get("summary") or {}
+        result.append(
+            {
+                "id": p.get("id", ""),
+                "title": p.get("title", ""),
+                "date": p.get("date", ""),
+                "one_liner": summary.get("one_liner", ""),
+                "connections": connections,
+            }
+        )
+    return result
+
+
+@app.get("/timeline", response_class=HTMLResponse)
+async def timeline_page(request: Request) -> HTMLResponse:
+    papers = load_papers()
+    timeline_data = build_timeline_data(papers)
+    return templates.TemplateResponse(
+        "timeline.html", {"request": request, "timeline_data": timeline_data}
+    )
+
+
 @app.post("/api/search-kg")
 async def api_search_kg(request: Request) -> JSONResponse:
     body = await request.json()
