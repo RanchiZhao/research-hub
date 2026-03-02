@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timeline — Research Hub</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-base-200">
+
+  <div class="navbar bg-base-100 shadow-lg">
+    <a href="./" class="btn btn-ghost text-xl">Research Hub</a>
+    <a href="./graph" class="btn btn-ghost btn-sm">Graph</a>
+    <a href="./search-kg" class="btn btn-ghost btn-sm">Search</a>
+    <a href="./compare" class="btn btn-ghost btn-sm">Compare</a>
+    <a href="./timeline" class="btn btn-ghost btn-sm">Timeline</a>
+  </div>
+
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-2xl font-bold mb-2">Method Evolution Timeline</h1>
+    <p class="text-base-content/60 mb-8 text-sm">Papers ordered by date. Badges show relationships to other papers in the library.</p>
+
+    <!-- Legend -->
+    <div class="flex flex-wrap gap-3 mb-8 text-sm">
+      <span class="badge badge-primary">extends</span>
+      <span class="badge badge-secondary">builds_on</span>
+      <span class="badge badge-accent">compares</span>
+    </div>
+
+    {% if not timeline_data %}
+      <div class="text-center py-16 opacity-50">No papers yet.</div>
+    {% else %}
+    <ul class="timeline timeline-vertical timeline-compact">
+      {% for paper in timeline_data %}
+      <li>
+        {% if not loop.first %}<hr/>{% endif %}
+        <div class="timeline-start text-xs text-base-content/50 w-24 text-right pr-2 pt-4">
+          {{ paper.date }}
+        </div>
+        <div class="timeline-middle">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 text-primary"><circle cx="10" cy="10" r="6"/></svg>
+        </div>
+        <div class="timeline-end pb-8">
+          <div class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow">
+            <div class="card-body p-4">
+              <a href="./paper/{{ paper.id }}" class="card-title text-base hover:text-primary transition-colors leading-snug">
+                {{ paper.title }}
+              </a>
+              {% if paper.one_liner %}
+              <p class="text-sm text-base-content/70 mt-1">{{ paper.one_liner }}</p>
+              {% endif %}
+              {% if paper.connections %}
+              <div class="mt-3 flex flex-wrap gap-2 items-center">
+                <span class="text-xs text-base-content/50">→</span>
+                {% for conn in paper.connections %}
+                  {% if conn.relationship == 'extends' %}
+                    <span class="badge badge-primary badge-sm">extends</span>
+                  {% elif conn.relationship == 'builds_on' %}
+                    <span class="badge badge-secondary badge-sm">builds_on</span>
+                  {% else %}
+                    <span class="badge badge-accent badge-sm">compares</span>
+                  {% endif %}
+                  <a href="./paper/{{ conn.id }}" class="text-xs underline underline-offset-2 hover:text-primary">
+                    {{ conn.title[:50] }}{% if conn.title|length > 50 %}…{% endif %}
+                  </a>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% if not loop.last %}<hr/>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+
+</body>
+</html>
