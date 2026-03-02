@@ -221,6 +221,67 @@ def parse_search_results(raw: str) -> list[dict]:
     return [{"title": "Search Results", "summary": raw[:500]}]
 
 
+@app.get("/api/paper-summary")
+async def paper_summary(id: str = "") -> JSONResponse:
+    """Return method, innovation, and tags for a single paper."""
+    papers = load_papers()
+    paper = next((p for p in papers if p.get("id") == id), None)
+    if paper is None:
+        return JSONResponse({}, status_code=404)
+    summary = paper.get("summary") or {}
+    return JSONResponse(
+        {
+            "method": summary.get("method", ""),
+            "innovation": summary.get("innovation", ""),
+            "tags": paper.get("tags", []),
+        }
+    )
+
+
+@app.get("/compare", response_class=HTMLResponse)
+async def compare_page(request: Request, ids: str = "") -> HTMLResponse:
+    """Comparison table page. ids is comma-separated paper IDs."""
+    papers = load_papers()
+    selected_ids = [i.strip() for i in ids.split(",") if i.strip()]
+    selected = [p for p in papers if p.get("id") in selected_ids] if selected_ids else []
+    return templates.TemplateResponse(
+        "compare.html",
+        {"request": request, "papers": papers, "selected": selected},
+    )
+
+
+@app.get("/api/compare-data")
+async def compare_data(ids: str = "") -> JSONResponse:
+    """Return structured comparison data for selected papers."""
+    papers = load_papers()
+    selected_ids = [i.strip() for i in ids.split(",") if i.strip()]
+    selected = [p for p in papers if p.get("id") in selected_ids]
+
+    # Collect all unique (dataset, metric) pairs
+    all_benchmarks: set[tuple[str, str]] = set()
+    for p in selected:
+        for b in p.get("benchmarks", []):
+            all_benchmarks.add((b["dataset"], b["metric"]))
+
+    # Build comparison matrix
+    benchmark_list = sorted(all_benchmarks)
+    rows = []
+    for dataset, metric in benchmark_list:
+        row: dict[str, Any] = {"dataset": dataset, "metric": metric, "scores": {}}
+        for p in selected:
+            for b in p.get("benchmarks", []):
+                if b["dataset"] == dataset and b["metric"] == metric:
+                    row["scores"][p["id"]] = {"score": b["score"], "notes": b.get("notes", "")}
+        rows.append(row)
+
+    return JSONResponse(
+        {
+            "papers": [{"id": p["id"], "title": p["title"], "date": p["date"]} for p in selected],
+            "benchmarks": rows,
+        }
+    )
+
+
 @app.post("/api/search-kg")
 async def api_search_kg(request: Request) -> JSONResponse:
     body = await request.json()

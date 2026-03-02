@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compare — Research Hub</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-base-200">
+
+  <div class="navbar bg-base-100 shadow-lg">
+    <a href="./" class="btn btn-ghost text-xl">Research Hub</a>
+    <a href="./graph" class="btn btn-ghost btn-sm">Graph</a>
+    <a href="./search-kg" class="btn btn-ghost btn-sm">Search</a>
+    <a href="./compare" class="btn btn-ghost btn-sm">Compare</a>
+  </div>
+
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <h1 class="text-2xl font-bold mb-6">Paper Comparison</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+      <!-- Paper Selector (sidebar) -->
+      <div class="lg:col-span-1">
+        <div class="card bg-base-100 shadow sticky top-4">
+          <div class="card-body p-4">
+            <h2 class="card-title text-sm mb-3">Select Papers</h2>
+            <div class="space-y-2 max-h-[70vh] overflow-y-auto" id="paper-selector">
+              {% for p in papers %}
+              <label class="flex items-start gap-2 cursor-pointer group">
+                <input type="checkbox" class="checkbox checkbox-sm checkbox-primary mt-1 flex-shrink-0 paper-check"
+                       value="{{ p.id }}"
+                       {% if p in selected %}checked{% endif %}>
+                <div>
+                  <div class="text-xs font-medium leading-tight group-hover:text-primary transition-colors">
+                    {{ p.title[:60] }}{% if p.title|length > 60 %}…{% endif %}
+                  </div>
+                  <div class="text-xs opacity-50">{{ p.date }}</div>
+                </div>
+              </label>
+              {% endfor %}
+            </div>
+            <button id="compare-btn" class="btn btn-primary btn-sm mt-3 w-full">Compare</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison Content -->
+      <div class="lg:col-span-3 space-y-6" id="compare-content">
+        {% if selected %}
+        <div id="loading-indicator" class="hidden text-center py-8">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+        <div id="compare-tables">
+          <!-- Filled by JS after load -->
+        </div>
+        {% else %}
+        <div class="card bg-base-100 shadow">
+          <div class="card-body text-center py-16 opacity-50">
+            <p class="text-lg">Select papers on the left to compare.</p>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+<script>
+(function() {
+  // --- URL helpers ---
+  function getSelectedIds() {
+    var params = new URLSearchParams(window.location.search);
+    var ids = params.get('ids') || '';
+    return ids ? ids.split(',').filter(Boolean) : [];
+  }
+
+  function setSelectedIds(ids) {
+    var url = new URL(window.location.href);
+    if (ids.length) {
+      url.searchParams.set('ids', ids.join(','));
+    } else {
+      url.searchParams.delete('ids');
+    }
+    window.history.replaceState({}, '', url.toString());
+  }
+
+  // Sync checkboxes to URL on page load
+  var currentIds = getSelectedIds();
+  document.querySelectorAll('.paper-check').forEach(function(cb) {
+    cb.checked = currentIds.indexOf(cb.value) !== -1;
+  });
+
+  // Compare button
+  document.getElementById('compare-btn').addEventListener('click', function() {
+    var ids = [];
+    document.querySelectorAll('.paper-check:checked').forEach(function(cb) {
+      ids.push(cb.value);
+    });
+    setSelectedIds(ids);
+    if (ids.length > 0) {
+      loadComparison(ids);
+    } else {
+      document.getElementById('compare-tables').innerHTML =
+        '<div class="card bg-base-100 shadow"><div class="card-body text-center py-16 opacity-50">' +
+        '<p class="text-lg">Select papers on the left to compare.</p></div></div>';
+    }
+  });
+
+  // --- Rendering ---
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function parseNumeric(score) {
+    var m = String(score).match(/([\d.]+)/);
+    return m ? parseFloat(m[1]) : null;
+  }
+
+  function renderComparison(data) {
+    var papers = data.papers;
+    var benchmarks = data.benchmarks;
+    var container = document.getElementById('compare-tables');
+    container.innerHTML = '';
+
+    if (!papers.length) {
+      container.innerHTML = '<div class="card bg-base-100 shadow"><div class="card-body text-center py-16 opacity-50"><p>No papers selected.</p></div></div>';
+      return;
+    }
+
+    // --- Benchmark Table ---
+    var benchSection = document.createElement('div');
+    benchSection.className = 'card bg-base-100 shadow';
+    var benchBody = document.createElement('div');
+    benchBody.className = 'card-body p-4';
+    benchBody.innerHTML = '<h2 class="card-title text-base mb-3">Benchmark Comparison</h2>';
+
+    if (benchmarks.length === 0) {
+      benchBody.innerHTML += '<p class="text-sm opacity-50">No benchmark data for selected papers.</p>';
+    } else {
+      var wrap = document.createElement('div');
+      wrap.className = 'overflow-x-auto';
+
+      var table = document.createElement('table');
+      table.className = 'table table-zebra table-sm';
+
+      // Header
+      var thead = document.createElement('thead');
+      var headerRow = document.createElement('tr');
+      headerRow.innerHTML = '<th>Dataset</th><th>Metric</th>';
+      papers.forEach(function(p) {
+        var th = document.createElement('th');
+        th.className = 'max-w-xs';
+        th.innerHTML = '<div class="text-xs font-semibold leading-tight" title="' + escapeHtml(p.title) + '">' +
+          escapeHtml(p.title.length > 40 ? p.title.slice(0, 40) + '…' : p.title) +
+          '</div><div class="text-xs opacity-50 font-normal">' + escapeHtml(p.date) + '</div>';
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      // Body
+      var tbody = document.createElement('tbody');
+      benchmarks.forEach(function(row) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td class="font-medium">' + escapeHtml(row.dataset) + '</td>' +
+                       '<td class="opacity-70">' + escapeHtml(row.metric) + '</td>';
+
+        // Find best score
+        var nums = papers.map(function(p) {
+          var entry = row.scores[p.id];
+          return entry ? parseNumeric(entry.score) : null;
+        });
+        var validNums = nums.filter(function(n) { return n !== null; });
+        var best = validNums.length ? Math.max.apply(null, validNums) : null;
+
+        papers.forEach(function(p, i) {
+          var td = document.createElement('td');
+          var entry = row.scores[p.id];
+          if (entry) {
+            var isBest = best !== null && nums[i] !== null && nums[i] === best && validNums.length > 1;
+            td.innerHTML = '<span class="' + (isBest ? 'text-success font-bold' : '') + '">' +
+              escapeHtml(entry.score) + '</span>' +
+              (entry.notes ? '<span class="text-xs opacity-50 ml-1">' + escapeHtml(entry.notes) + '</span>' : '');
+          } else {
+            td.innerHTML = '<span class="opacity-30">—</span>';
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      wrap.appendChild(table);
+      benchBody.appendChild(wrap);
+    }
+
+    benchSection.appendChild(benchBody);
+    container.appendChild(benchSection);
+
+    // --- Method & Innovation ---
+    var methodSection = document.createElement('div');
+    methodSection.className = 'card bg-base-100 shadow';
+    var methodBody = document.createElement('div');
+    methodBody.className = 'card-body p-4';
+    methodBody.innerHTML = '<h2 class="card-title text-base mb-3">Method & Innovation</h2>';
+
+    var methodGrid = document.createElement('div');
+    methodGrid.className = 'grid gap-4';
+    methodGrid.style.gridTemplateColumns = 'repeat(' + Math.min(papers.length, 3) + ', minmax(0, 1fr))';
+
+    papers.forEach(function(p) {
+      // We need summary from the original paper data (not returned by API), fetch from DOM
+      var card = document.createElement('div');
+      card.className = 'bg-base-200 rounded-box p-3 space-y-2';
+      card.innerHTML =
+        '<div class="text-xs font-semibold opacity-70 truncate" title="' + escapeHtml(p.title) + '">' +
+          escapeHtml(p.title.length > 45 ? p.title.slice(0, 45) + '…' : p.title) +
+        '</div>' +
+        '<div id="method-' + p.id.replace(/[^a-z0-9]/gi, '_') + '" class="text-xs opacity-60 italic">Loading…</div>';
+      methodGrid.appendChild(card);
+    });
+
+    methodBody.appendChild(methodGrid);
+    methodSection.appendChild(methodBody);
+    container.appendChild(methodSection);
+
+    // Fetch individual paper data to fill method/innovation
+    papers.forEach(function(p) {
+      var safeId = p.id.replace(/[^a-z0-9]/gi, '_');
+      var el = document.getElementById('method-' + safeId);
+      fetch('./api/paper-summary?id=' + encodeURIComponent(p.id))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!el) return;
+          var method = d.method || '—';
+          var innovation = d.innovation || '—';
+          el.innerHTML =
+            '<div class="mb-1"><span class="font-semibold not-italic opacity-80">Method:</span> ' + escapeHtml(method) + '</div>' +
+            '<div><span class="font-semibold not-italic opacity-80">Innovation:</span> ' + escapeHtml(innovation) + '</div>';
+          el.classList.remove('italic', 'opacity-60');
+          el.classList.add('text-xs', 'space-y-1');
+        })
+        .catch(function() {
+          if (el) el.textContent = '(unavailable)';
+        });
+    });
+
+    // --- Tags ---
+    var tagsSection = document.createElement('div');
+    tagsSection.className = 'card bg-base-100 shadow';
+    var tagsBody = document.createElement('div');
+    tagsBody.className = 'card-body p-4';
+    tagsBody.innerHTML = '<h2 class="card-title text-base mb-3">Tags</h2>';
+
+    // Fetch tags per paper
+    var tagGrid = document.createElement('div');
+    tagGrid.className = 'grid gap-4';
+    tagGrid.style.gridTemplateColumns = 'repeat(' + Math.min(papers.length, 3) + ', minmax(0, 1fr))';
+
+    papers.forEach(function(p) {
+      var col = document.createElement('div');
+      col.className = 'bg-base-200 rounded-box p-3';
+      col.innerHTML = '<div class="text-xs font-semibold opacity-70 truncate mb-2">' + escapeHtml(p.title.slice(0, 45)) + '</div>';
+      col.id = 'tags-' + p.id.replace(/[^a-z0-9]/gi, '_');
+      tagGrid.appendChild(col);
+    });
+
+    tagsBody.appendChild(tagGrid);
+    tagsSection.appendChild(tagsBody);
+    container.appendChild(tagsSection);
+
+    // Fetch tags data
+    var tagPromises = papers.map(function(p) {
+      return fetch('./api/paper-summary?id=' + encodeURIComponent(p.id))
+        .then(function(r) { return r.json(); })
+        .then(function(d) { return { id: p.id, tags: d.tags || [] }; })
+        .catch(function() { return { id: p.id, tags: [] }; });
+    });
+
+    Promise.all(tagPromises).then(function(results) {
+      // Find common tags
+      if (results.length < 2) {
+        results.forEach(function(r) { renderTagsForPaper(r.id, r.tags, []); });
+        return;
+      }
+      var sets = results.map(function(r) { return new Set(r.tags); });
+      var common = Array.from(sets[0]).filter(function(t) {
+        return sets.every(function(s) { return s.has(t); });
+      });
+      results.forEach(function(r) { renderTagsForPaper(r.id, r.tags, common); });
+    });
+
+    function renderTagsForPaper(paperId, tags, common) {
+      var safeId = paperId.replace(/[^a-z0-9]/gi, '_');
+      var el = document.getElementById('tags-' + safeId);
+      if (!el) return;
+      var html = '<div class="flex flex-wrap gap-1">';
+      tags.forEach(function(t) {
+        var isCommon = common.indexOf(t) !== -1;
+        html += '<span class="badge badge-xs ' + (isCommon ? 'badge-primary' : 'badge-outline') + '">' +
+          escapeHtml(t) + '</span>';
+      });
+      html += '</div>';
+      if (common.length > 0) {
+        html += '<div class="text-xs opacity-40 mt-1">■ shared  □ unique</div>';
+      }
+      el.innerHTML += html;
+    }
+  }
+
+  async function loadComparison(ids) {
+    var loading = document.getElementById('loading-indicator');
+    var tables = document.getElementById('compare-tables');
+    if (loading) loading.classList.remove('hidden');
+    if (tables) tables.innerHTML = '';
+
+    try {
+      var resp = await fetch('./api/compare-data?ids=' + encodeURIComponent(ids.join(',')));
+      var data = await resp.json();
+      renderComparison(data);
+    } catch (err) {
+      if (tables) tables.innerHTML = '<div class="card bg-base-100 shadow"><div class="card-body text-error text-sm">Error loading data: ' + escapeHtml(err.message) + '</div></div>';
+    } finally {
+      if (loading) loading.classList.add('hidden');
+    }
+  }
+
+  // Auto-load if IDs in URL
+  if (currentIds.length > 0) {
+    loadComparison(currentIds);
+  }
+})();
+</script>
+
+</body>
+</html>
