@@ -10,3 +10,4 @@ venv/
 *.sqlite
 node_modules/
 .DS_Store
+data/rag_storage/
