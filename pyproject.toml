@@ -1,0 +1,17 @@
+[project]
+name = "research-hub"
+version = "0.1.0"
+description = "AI Research Knowledge Hub - Paper reading, knowledge graph, and visualization"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "jinja2>=3.1.0",
+    "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.1.0",
+]
