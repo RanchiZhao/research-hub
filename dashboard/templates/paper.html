@@ -45,7 +45,13 @@
       <span>{{ paper.authors | join(', ') }}</span>
       {% endif %}
       {% if paper.source_url %}
-      <a href="{{ paper.source_url }}" target="_blank" class="link link-primary">arXiv</a>
+      <a href="{{ paper.source_url }}" target="_blank" class="link link-primary">
+        {%- if paper.source_type == 'zhihu' %}知乎
+        {%- elif paper.source_type == 'notion' %}Notion
+        {%- elif paper.source_type == 'blog' %}Blog
+        {%- else %}arXiv
+        {%- endif -%}
+      </a>
       {% endif %}
       {% if paper.code_url %}
       <a href="{{ paper.code_url }}" target="_blank" class="link link-secondary">Code</a>
@@ -152,6 +158,16 @@
         </li>
         {% endfor %}
       </ul>
+    </div>
+    {% endif %}
+
+    <!-- Full Article Text -->
+    {% if paper.body_text %}
+    <div class="mb-8">
+      <h2 class="text-xl font-bold mb-3">Full Text</h2>
+      <div class="card bg-base-100 shadow">
+        <div class="card-body prose prose-invert max-w-none text-sm opacity-80 max-h-96 overflow-y-auto whitespace-pre-wrap">{{ paper.body_text }}</div>
+      </div>
     </div>
     {% endif %}
 

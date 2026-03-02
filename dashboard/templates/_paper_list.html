@@ -6,7 +6,16 @@
      data-oneliner="{{ (paper.summary.one_liner if paper.summary and paper.summary.one_liner else '') | lower }}"
      data-tags="{{ paper.tags | join(',') | lower }}">
     <div class="card-body p-4 gap-1">
-      <h3 class="card-title text-base leading-snug">{{ paper.title }}</h3>
+      <div class="flex items-center gap-2">
+        <h3 class="card-title text-base leading-snug">{{ paper.title }}</h3>
+        {% if paper.source_type == 'zhihu' %}
+        <span class="badge badge-secondary badge-sm shrink-0">知乎</span>
+        {% elif paper.source_type == 'blog' %}
+        <span class="badge badge-accent badge-sm shrink-0">Blog</span>
+        {% elif paper.source_type == 'notion' %}
+        <span class="badge badge-info badge-sm shrink-0">Notion</span>
+        {% endif %}
+      </div>
       {% if paper.authors %}
       <p class="text-xs opacity-60">{{ paper.authors[0] }}{% if paper.authors | length > 1 %} et al.{% endif %}</p>
       {% endif %}
