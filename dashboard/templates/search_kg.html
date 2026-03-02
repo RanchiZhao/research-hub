@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search — Research Hub</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-base-200">
+
+  <div class="navbar bg-base-100 shadow-lg">
+    <a href="./" class="btn btn-ghost text-xl">Research Hub</a>
+    <a href="./graph" class="btn btn-ghost btn-sm">Graph</a>
+    <a href="./search-kg" class="btn btn-ghost btn-sm">Search</a>
+  </div>
+
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-2xl font-bold mb-6">Knowledge Search</h1>
+
+    <div class="flex gap-2 mb-6">
+      <input type="text" id="question-input" placeholder="Ask a question about your papers…"
+             class="input input-bordered flex-1" />
+      <button id="search-btn" class="btn btn-primary">Search</button>
+    </div>
+
+    <div id="loading" class="hidden text-center py-8">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+
+    <div id="results" class="hidden">
+      <h2 class="text-lg font-semibold mb-3">Results</h2>
+      <div id="results-content" class="card bg-base-100 shadow">
+        <div class="card-body">
+          <p id="results-text" class="whitespace-pre-wrap text-sm"></p>
+        </div>
+      </div>
+    </div>
+
+    <div id="empty" class="hidden text-center py-8 opacity-50">
+      No results found.
+    </div>
+  </div>
+
+<script>
+(function() {
+  var input = document.getElementById('question-input');
+  var btn = document.getElementById('search-btn');
+  var loading = document.getElementById('loading');
+  var results = document.getElementById('results');
+  var resultsText = document.getElementById('results-text');
+  var empty = document.getElementById('empty');
+
+  async function doSearch() {
+    var question = input.value.trim();
+    if (!question) return;
+
+    loading.classList.remove('hidden');
+    results.classList.add('hidden');
+    empty.classList.add('hidden');
+    btn.disabled = true;
+
+    try {
+      var resp = await fetch('./api/search-kg', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({question: question})
+      });
+      var data = await resp.json();
+      if (data.results && data.results.length > 0) {
+        resultsText.textContent = typeof data.results === 'string' ? data.results : JSON.stringify(data.results, null, 2);
+        results.classList.remove('hidden');
+      } else {
+        empty.classList.remove('hidden');
+      }
+    } catch (err) {
+      resultsText.textContent = 'Error: ' + err.message;
+      results.classList.remove('hidden');
+    } finally {
+      loading.classList.add('hidden');
+      btn.disabled = false;
+    }
+  }
+
+  btn.addEventListener('click', doSearch);
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doSearch();
+  });
+})();
+</script>
+
+</body>
+</html>

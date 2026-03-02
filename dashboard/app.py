@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from lightrag import QueryParam
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "papers"
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
@@ -157,3 +158,25 @@ async def graph_data() -> JSONResponse:
     papers = load_papers()
     data = build_graph_data(papers)
     return JSONResponse(data)
+
+
+@app.get("/search-kg", response_class=HTMLResponse)
+async def search_kg_page(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse("search_kg.html", {"request": request})
+
+
+@app.post("/api/search-kg")
+async def api_search_kg(request: Request) -> JSONResponse:
+    body = await request.json()
+    question = body.get("question", "")
+    if not question.strip():
+        return JSONResponse({"results": []})
+    from rag.engine import create_rag
+
+    rag = create_rag()
+    await rag.initialize_storages()
+    try:
+        result = await rag.aquery(question, param=QueryParam(mode="naive"))
+        return JSONResponse({"results": result})
+    finally:
+        await rag.finalize_storages()
