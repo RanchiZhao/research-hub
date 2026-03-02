@@ -24,11 +24,83 @@
 
     <!-- Paper List -->
     <h2 class="text-2xl font-bold mt-8 mb-4">Papers</h2>
+
+    <input type="text" id="search-input" placeholder="Search papers…"
+           class="input input-bordered w-full mb-4" />
+
     <div id="paper-list" hx-get="frag/papers" hx-trigger="load" hx-swap="innerHTML">
       {% include '_paper_list.html' %}
     </div>
 
+    <div id="no-results" class="hidden text-center py-12 opacity-50">No matching papers.</div>
+
   </div>
+
+  <script>
+  (function() {
+    let activeTag = null;
+
+    function filterPapers() {
+      const query = (document.getElementById('search-input').value || '').toLowerCase().trim();
+      const cards = document.querySelectorAll('.paper-card');
+      let visible = 0;
+
+      cards.forEach(function(card) {
+        const title = card.getAttribute('data-title') || '';
+        const oneliner = card.getAttribute('data-oneliner') || '';
+        const tags = card.getAttribute('data-tags') || '';
+
+        const matchesSearch = !query ||
+          title.indexOf(query) !== -1 ||
+          oneliner.indexOf(query) !== -1 ||
+          tags.indexOf(query) !== -1;
+
+        const matchesTag = !activeTag || tags.split(',').indexOf(activeTag) !== -1;
+
+        if (matchesSearch && matchesTag) {
+          card.style.display = '';
+          visible++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      var noResults = document.getElementById('no-results');
+      if (noResults) {
+        noResults.classList.toggle('hidden', visible > 0);
+      }
+    }
+
+    // Search input
+    document.getElementById('search-input').addEventListener('input', filterPapers);
+
+    // Tag click delegation
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.tag-btn');
+      if (!btn) return;
+
+      var tag = btn.getAttribute('data-tag');
+      if (activeTag === tag) {
+        activeTag = null;
+      } else {
+        activeTag = tag;
+      }
+
+      // Update all tag button styles
+      document.querySelectorAll('.tag-btn').forEach(function(b) {
+        if (b.getAttribute('data-tag') === activeTag) {
+          b.classList.remove('badge-outline');
+          b.classList.add('badge-primary');
+        } else {
+          b.classList.add('badge-outline');
+          b.classList.remove('badge-primary');
+        }
+      });
+
+      filterPapers();
+    });
+  })();
+  </script>
 
 </body>
 </html>
