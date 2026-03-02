@@ -11,6 +11,7 @@
 
   <div class="navbar bg-base-100 shadow-lg">
     <a href="../" class="btn btn-ghost text-xl">Research Hub</a>
+    <a href="../graph" class="btn btn-ghost btn-sm">Graph</a>
   </div>
 
   <div class="container mx-auto px-4 py-8 max-w-4xl">
@@ -120,7 +121,14 @@
       <h2 class="text-xl font-bold mb-3">Key References</h2>
       <ul class="list-disc list-inside space-y-1 text-sm">
         {% for ref in paper.key_references %}
-        <li>{{ ref.title }} <span class="badge badge-ghost badge-xs">{{ ref.relationship }}</span></li>
+        <li>
+          {% if ref.arxiv_id and arxiv_map.get(ref.arxiv_id) %}
+          <a href="../paper/{{ arxiv_map[ref.arxiv_id].id }}" class="link link-primary">{{ ref.title }}</a>
+          {% else %}
+          {{ ref.title }}
+          {% endif %}
+          <span class="badge badge-ghost badge-xs">{{ ref.relationship }}</span>
+        </li>
         {% endfor %}
       </ul>
     </div>
