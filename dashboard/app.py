@@ -325,6 +325,16 @@ async def paper_summary(id: str = "") -> JSONResponse:
     )
 
 
+@app.get("/diff", response_class=HTMLResponse)
+async def diff_page(request: Request, a: str = "", b: str = "") -> HTMLResponse:
+    papers = load_papers()
+    paper_a = next((p for p in papers if p.get("id") == a), None) if a else None
+    paper_b = next((p for p in papers if p.get("id") == b), None) if b else None
+    return templates.TemplateResponse(
+        "diff.html", {"request": request, "papers": papers, "paper_a": paper_a, "paper_b": paper_b}
+    )
+
+
 @app.get("/compare", response_class=HTMLResponse)
 async def compare_page(request: Request, ids: str = "") -> HTMLResponse:
     """Comparison table page. ids is comma-separated paper IDs."""
