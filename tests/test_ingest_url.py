@@ -1,13 +1,14 @@
 """Tests for scripts/ingest_url.py — URL ingestion helpers."""
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 # Allow importing from scripts/ without installing as a package
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from ingest_url import article_to_paper_json, detect_source_type, generate_id
+from ingest_url import article_to_paper_json, detect_source_type, fetch_article, generate_id
 
 
 class TestDetectSourceType:
@@ -60,6 +61,16 @@ class TestGenerateId:
         assert not slug.endswith("-")
 
 
+class _FakeDocument:
+    """Minimal stub for trafilatura 2.0 Document object."""
+
+    def __init__(self, data: dict):
+        self._data = data
+
+    def as_dict(self) -> dict:
+        return self._data
+
+
 class TestArticleToPaperJson:
     def _base_extracted(self, **overrides) -> dict:
         base = {
@@ -71,6 +82,9 @@ class TestArticleToPaperJson:
         }
         base.update(overrides)
         return base
+
+    def _base_document(self, **overrides) -> _FakeDocument:
+        return _FakeDocument(self._base_extracted(**overrides))
 
     def test_basic_fields(self):
         extracted = self._base_extracted()
@@ -139,3 +153,38 @@ class TestArticleToPaperJson:
         summary = paper["summary"]
         for key in ("one_liner", "problem", "method", "innovation", "results"):
             assert key in summary
+
+
+class TestFetchArticleDocumentConversion:
+    """Verify fetch_article converts trafilatura 2.0 Document objects to dict."""
+
+    def test_returns_dict_when_bare_extraction_returns_document(self):
+        doc = _FakeDocument({"title": "Test", "text": "Body", "author": None, "date": None})
+
+        with patch("ingest_url.fetch_url", return_value="<html>fake</html>"), \
+             patch("ingest_url.bare_extraction", return_value=doc):
+            result = fetch_article("https://example.com/article")
+
+        assert isinstance(result, dict)
+        assert result["title"] == "Test"
+
+    def test_returns_dict_when_bare_extraction_already_returns_dict(self):
+        data = {"title": "Plain", "text": "Content", "author": None, "date": None}
+
+        with patch("ingest_url.fetch_url", return_value="<html>fake</html>"), \
+             patch("ingest_url.bare_extraction", return_value=data):
+            result = fetch_article("https://example.com/article")
+
+        assert isinstance(result, dict)
+        assert result["title"] == "Plain"
+
+    def test_raises_on_fetch_failure(self):
+        with patch("ingest_url.fetch_url", return_value=None):
+            with pytest.raises(RuntimeError, match="Failed to fetch"):
+                fetch_article("https://example.com/article")
+
+    def test_raises_on_extraction_failure(self):
+        with patch("ingest_url.fetch_url", return_value="<html>fake</html>"), \
+             patch("ingest_url.bare_extraction", return_value=None):
+            with pytest.raises(RuntimeError, match="Failed to extract"):
+                fetch_article("https://example.com/article")
