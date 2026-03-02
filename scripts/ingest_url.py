@@ -20,6 +20,9 @@ def fetch_article(url: str) -> dict:
     if not result:
         raise RuntimeError(f"Failed to extract content from {url}")
 
+    # trafilatura 2.0 returns Document object, convert to dict
+    if hasattr(result, "as_dict"):
+        return result.as_dict()
     return result
 
 
